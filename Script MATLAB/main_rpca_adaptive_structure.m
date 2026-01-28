@@ -29,6 +29,8 @@ R = corr(X_init);
 [lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');
 P_all = P_all(:, idx);
 
+
+
 % --- SELEZIONE INIZIALE n_pcs (CPV) ---
 total_variance = sum(lambda_sorted);
 cum_variance = cumsum(lambda_sorted) / total_variance;

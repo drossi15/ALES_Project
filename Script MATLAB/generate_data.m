@@ -1,5 +1,6 @@
 %% 1. Configurazione Iniziale
 clear; clc; close all;
+rng(158);
 
 % Parametri generali
 n_samples = 1000;      % Numero totale di campioni
@@ -33,6 +34,7 @@ drift_slope_A = 0.0002;
 % Simuliamo una deriva del sensore 2 (spostamento della media)
 sensor_drift_slope = 0.002; 
 
+
 fprintf('Generazione dati in corso...\n');
 
 for k = 1:n_samples
@@ -60,8 +62,23 @@ for k = 1:n_samples
     % --- E. Inserimento Guasto (Fault Injection) ---
     % Aggiungiamo un guasto improvviso dal campione 800 in poi.
     % Simuliamo un "bias" (scalino) sul sensore 1.
-    if k >= 800
-        x_k(1) = x_k(1) + 3.0; % Guasto di ampiezza 3 sigma circa
+    if k >= 400 && k<=410
+        x_k(5) = x_k(5) + 5; % Guasto di ampiezza 3 sigma circa
+        GroundTruth_Fault(k) = 1;
+    end
+
+    if k >= 480 && k<=490
+        x_k(5) = x_k(5) + 5; % Guasto di ampiezza 3 sigma circa
+        GroundTruth_Fault(k) = 1;
+    end
+    
+    if k >= 500 && k<=550
+        x_k(2) = x_k(2) + 0.01*(k-300); % Guasto di ampiezza 3 sigma circa
+        GroundTruth_Fault(k) = 1;
+    end
+
+    if k >= 800 && k<=840
+        x_k(1) = x_k(1) + 4.0; % Guasto di ampiezza 3 sigma circa
         GroundTruth_Fault(k) = 1;
     end
     
