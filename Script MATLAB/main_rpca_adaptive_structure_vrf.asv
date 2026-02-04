@@ -1,3 +1,99 @@
+
+
+function n_pcs = cpv(lambda_sorted, cpv_threshold)
+    % CPV Numero minimo di componenti che superano la soglia CPV
+    %   n_pcs = cpv(lambda_sorted, cpv_threshold)
+    %   lambda_sorted : vettore degli autovalori (preferibilmente ordinato decrescente)
+    %   cpv_threshold : soglia cumulativa (es. 0.95 per il 95%)
+    
+    % Validazione input
+    if isempty(lambda_sorted) || any(lambda_sorted < 0)
+        error('lambda_sorted deve essere un vettore non vuoto di autovalori non negativi.');
+    end
+    if cpv_threshold <= 0 || cpv_threshold > 1
+        error('cpv_threshold deve essere in (0,1].');
+    end
+    
+    total_variance = sum(lambda_sorted);
+    if total_variance == 0
+        warning('Varianza totale nulla: restituisco 1.');
+        n_pcs = 1;
+        return
+    end
+    
+    cum_variance = cumsum(lambda_sorted) / total_variance;
+    n_pcs = find(cum_variance >= cpv_threshold, 1, 'first');
+    if isempty(n_pcs)
+        n_pcs = numel(lambda_sorted); % se soglia non raggiunta, prendo tutte le componenti
+    end
+    
+    fprintf('Selezionate %d componenti principali (spiegano %.2f%% della varianza).\n', ...
+        n_pcs, cum_variance(n_pcs)*100);
+end
+
+
+function [n_pcs_opt, VRE] = select_npcs_vre(R, P_all, lambda_sorted)
+%--------------------------------------------------------------------------
+% VRE-based selection of number of principal components
+% Based on Li et al. (2000), Eq. (37) and Eq. (38)
+%
+% INPUT:
+%   R              : correlation (or covariance) matrix (m x m)
+%   P_all          : eigenvectors of R (columns sorted by eigenvalues)
+%   lambda_sorted  : eigenvalues of R (descending order)
+%
+% OUTPUT:
+%   n_pcs_opt      : optimal number of PCs (minimum VRE)
+%   VRE            : VRE value for each l = 1,...,m-1
+%--------------------------------------------------------------------------
+
+m = size(R,1);
+VRE = zeros(m-1,1);
+
+% Variance of each variable (for correlation matrix this is 1)
+var_x = diag(R);
+
+for l = 1:(m-1)
+    
+    % PCA projection matrix
+    P_l = P_all(:,1:l);
+    C = P_l * P_l';    % C = P_l P_l^T
+    
+    u = zeros(m,1);   % reconstruction error variance for each variable
+    
+    for i = 1:m
+        
+        r_ii = R(i,i);
+        r_i  = R(:,i);
+        
+        c_i  = C(:,i);
+        c_ii = C(i,i);
+        
+        % Eq. (37) - Variance of reconstruction error
+        numerator = r_ii ...
+                    - 2 * (c_i' * r_i) ...
+                    + (c_i' * R * c_i);
+        
+        denominator = (1 - c_ii)^2;
+        
+        u(i) = numerator / denominator;
+    end
+    
+    % Eq. (38) - Global VRE
+    VRE(l) = sum(u ./ var_x);
+end
+
+% Optimal number of PCs = minimum VRE
+[~, n_pcs_opt] = min(VRE);
+
+end
+
+
+
+
+
+
+
 %% MAIN_RPCA_ADAPTIVE_STRUCTURE.m
 % Implementazione RPCA con Selezione Automatica del numero di PC con VRF
 % Prima occorre eseguire generate_data.m
@@ -5,6 +101,8 @@
 if ~exist('X_raw', 'var')
     error('Esegui prima lo script generate_data.m!');
 end
+
+
 
 %% 1. Parametri dell'Algoritmo
 mu = 0.95;              % Forgetting Factor (consiglio 0.95 per reattività)
@@ -37,19 +135,21 @@ P_all = P_all(:, idx);   %Riordino le colonne di P_all usando idx ( j-esima colo
 
 %% --- SELEZIONE INIZIALE n_pcs (CPV) ---   Eq(33)
 
-total_variance = sum(lambda_sorted);     % varianza totale come somma degli autovalori (teoricamente 6)
-cum_variance = cumsum(lambda_sorted) / total_variance;  %frazioni cumulative (vettore 6*1)
-n_pcs = find(cum_variance >= cpv_threshold, 1, 'first');   %trova il numero minimo numero di componenti per superare la soglia cpv
-if isempty(n_pcs), n_pcs = 1; end % Sicurezza
 
-fprintf('Inizializzazione: Selezionate %d componenti principali (Spiegano %.2f%% var)\n', ...
-    n_pcs, cum_variance(n_pcs)*100);
-
+n_pcs= cpv(lambda_sorted,cpv_threshold);
 P = P_all(:, 1:n_pcs);   % Eq(1)  %Selezione le prime n_pcs colonne di P, gli autovettori corrispondenti alle prime n_pcs componenti principali
 
 
 %%  Selezione iniziale con VRF
 
+
+[n_pcs_vre, VRE_values] = select_npcs_vre(R, P_all, lambda_sorted);
+fprintf('Selezione VRE: %d componenti principali (VRE minima = %.4f)\n', ...
+    n_pcs_vre, VRE_values(n_pcs_vre));
+
+% Usa VRE invece di CPV
+n_pcs = n_pcs_vre;
+P = P_all(:, 1:n_pcs);
 
 
 %% 2. Loop Ricorsivo (Adaptive Monitoring & Structure)
@@ -134,15 +234,8 @@ for k = (n_init + 1) : n_obs
         P_all = P_all(:, idx);
         
         % Calcolo CPV Ricorsivo
-        total_var = sum(lambda_sorted);
-        cum_var_percentage = cumsum(lambda_sorted) / total_var;
-        
-        % Aggiorniamo n_pcs per il prossimo ciclo
-        n_pcs_new = find(cum_var_percentage >= cpv_threshold, 1, 'first');
-        if isempty(n_pcs_new), n_pcs_new = 1; end
-        
-        % Aggiorniamo le variabili globali del modello
-        n_pcs = n_pcs_new;
+       
+        cpv(lambda_sorted,cpv_threshold);
         P = P_all(:, 1:n_pcs);
         
     else
