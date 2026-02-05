@@ -1,10 +1,108 @@
+
+
+function n_pcs = cpv(lambda_sorted, cpv_threshold)
+    % CPV Numero minimo di componenti che superano la soglia CPV
+    %   n_pcs = cpv(lambda_sorted, cpv_threshold)
+    %   lambda_sorted : vettore degli autovalori (preferibilmente ordinato decrescente)
+    %   cpv_threshold : soglia cumulativa (es. 0.95 per il 95%)
+    
+    % Validazione input
+    if isempty(lambda_sorted) || any(lambda_sorted < 0)
+        error('lambda_sorted deve essere un vettore non vuoto di autovalori non negativi.');
+    end
+    if cpv_threshold <= 0 || cpv_threshold > 1
+        error('cpv_threshold deve essere in (0,1].');
+    end
+    
+    total_variance = sum(lambda_sorted);
+    if total_variance == 0
+        warning('Varianza totale nulla: restituisco 1.');
+        n_pcs = 1;
+        return
+    end
+    
+    cum_variance = cumsum(lambda_sorted) / total_variance;
+    n_pcs = find(cum_variance >= cpv_threshold, 1, 'first');
+    if isempty(n_pcs)
+        n_pcs = numel(lambda_sorted); % se soglia non raggiunta, prendo tutte le componenti
+    end
+    
+    fprintf('Selezionate %d componenti principali (spiegano %.2f%% della varianza).\n', ...
+        n_pcs, cum_variance(n_pcs)*100);
+end
+
+
+function [n_pcs_opt, VRE] = select_npcs_vre(R, P_all, lambda_sorted)
+%--------------------------------------------------------------------------
+% VRE-based selection of number of principal components
+% Based on Li et al. (2000), Eq. (37) and Eq. (38)
+%
+% INPUT:
+%   R              : correlation (or covariance) matrix (m x m)
+%   P_all          : eigenvectors of R (columns sorted by eigenvalues)
+%   lambda_sorted  : eigenvalues of R (descending order)
+%
+% OUTPUT:
+%   n_pcs_opt      : optimal number of PCs (minimum VRE)
+%   VRE            : VRE value for each l = 1,...,m-1
+%--------------------------------------------------------------------------
+
+m = size(R,1);
+VRE = zeros(m-1,1);
+
+% Variance of each variable (for correlation matrix this is 1)
+var_x = diag(R);
+
+for l = 1:(m-1)
+    
+    % PCA projection matrix
+    P_l = P_all(:,1:l);
+    C = P_l * P_l';    % C = P_l P_l^T
+    
+    u = zeros(m,1);   % reconstruction error variance for each variable
+    
+    for i = 1:m
+        
+        r_ii = R(i,i);
+        r_i  = R(:,i);
+        
+        c_i  = C(:,i);
+        c_ii = C(i,i);
+        
+        % Eq. (37) - Variance of reconstruction error
+        numerator = r_ii ...
+                    - 2 * (c_i' * r_i) ...
+                    + (c_i' * R * c_i);
+        
+        denominator = (1 - c_ii)^2;
+        
+        u(i) = numerator / denominator;
+    end
+    
+    % Eq. (38) - Global VRE
+    VRE(l) = sum(u ./ var_x);
+end
+
+% Optimal number of PCs = minimum VRE
+[~, n_pcs_opt] = min(VRE);
+
+end
+
+
+
+
+
+
+
 %% MAIN_RPCA_ADAPTIVE_STRUCTURE.m
-% Implementazione RPCA con Selezione Automatica del numero di PC (CPV)
+% Implementazione RPCA con Selezione Automatica del numero di PC con VRF
 % Prima occorre eseguire generate_data.m
 
 if ~exist('X_raw', 'var')
     error('Esegui prima lo script generate_data.m!');
 end
+
+
 
 %% 1. Parametri dell'Algoritmo
 mu = 0.95;              % Forgetting Factor (consiglio 0.95 per reattività)
@@ -13,34 +111,36 @@ cpv_threshold = 0.90;   % SOGLIA CPV: Vogliamo spiegare almeno il 90% della vari
                         % Nota: Poiché il sistema ha 3 variabili latenti forti su 6, 
                         % il 90% dovrebbe selezionare n_pcs = 3.
 
-% -- Inizializzazione (Training Phase) --
-n_init = 200;
+% Inizializzazione
+n_init = 200;                    %%numero iniziale di campioni
 X_init = X_raw(1:n_init, :);
 [n_obs, m_vars] = size(X_raw);
 
+%%
+
 % Statistiche iniziali
-b = mean(X_init)';         %Eq (3)   
-sigma_vec = std(X_init)';   
-Sigma = diag(sigma_vec);   %Eq (5)
-R = corr(X_init);         %Eq(6) Correlation Matrix
+b = mean(X_init)';            %Eq (3)   media delle 6 variabili
+sigma_vec = std(X_init)';     %         std delle 6 variabili
+Sigma = diag(sigma_vec);      %Eq (5)
+R = corr(X_init);             %Eq(6)    matrice di correlazione
 
-% Eigen-decomposition iniziale    Eq(1) e Eq(2)
-[P_all, Lambda_all] = eig(R);
-[lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');
-P_all = P_all(:, idx);
+%%
+
+% Scomposizione Autovalori e Autovettori  Eq(1) e Eq(2)
+
+[P_all, Lambda_all] = eig(R);    %P_all matrice le cui colonne autovettori di R, lambda matrice diagonale degli autovalori   
+[lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');    %Estraggo gli autovalori e li riordino dal più grande al più piccolo
+P_all = P_all(:, idx);   %Riordino le colonne di P_all usando idx ( j-esima colonna di P_all corrisponde a lambda_sorted(j))
+
+
+%% --- SELEZIONE INIZIALE n_pcs (VRE) ---   Eq(33)
+
+
+n_pcs= select_npcs_vre(R, P_all, lambda_sorted);
+P = P_all(:, 1:n_pcs);   % Eq(1)  %Selezione le prime n_pcs colonne di P, gli autovettori corrispondenti alle prime n_pcs componenti principali
 
 
 
-% --- SELEZIONE INIZIALE n_pcs (CPV) ---   Eq(33)
-total_variance = sum(lambda_sorted);
-cum_variance = cumsum(lambda_sorted) / total_variance;
-n_pcs = find(cum_variance >= cpv_threshold, 1, 'first');
-if isempty(n_pcs), n_pcs = 1; end % Sicurezza
-
-fprintf('Inizializzazione: Selezionate %d componenti principali (Spiegano %.2f%% var)\n', ...
-    n_pcs, cum_variance(n_pcs)*100);
-
-P = P_all(:, 1:n_pcs);   % Eq(1)
 
 %% 2. Loop Ricorsivo (Adaptive Monitoring & Structure)
 T2_store = zeros(n_obs, 1);
@@ -124,15 +224,8 @@ for k = (n_init + 1) : n_obs
         P_all = P_all(:, idx);
         
         % Calcolo CPV Ricorsivo
-        total_var = sum(lambda_sorted);
-        cum_var_percentage = cumsum(lambda_sorted) / total_var;
-        
-        % Aggiorniamo n_pcs per il prossimo ciclo
-        n_pcs_new = find(cum_var_percentage >= cpv_threshold, 1, 'first');
-        if isempty(n_pcs_new), n_pcs_new = 1; end
-        
-        % Aggiorniamo le variabili globali del modello
-        n_pcs = n_pcs_new;
+       
+        n_pcs= select_npcs_vre(R, P_all, lambda_sorted);
         P = P_all(:, 1:n_pcs);
         
     else
@@ -140,6 +233,10 @@ for k = (n_init + 1) : n_obs
         % n_pcs rimane quello dell'ultimo passo sano
     end
 end
+
+
+
+%%
 
 %% 3. Plotting Avanzato
 figure('Name', 'Adaptive Structure RPCA', 'Color', 'w', 'Position', [100 100 1000 800]);
