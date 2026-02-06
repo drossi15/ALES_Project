@@ -184,33 +184,46 @@ for k = (n_init + 1) : n_obs
     end
 end
 
+%% 3. Plotting Avanzato (VRE Selection)
+figure('Name', 'Adaptive RPCA with VRE Monitoring', 'Color', 'w', 'Position', [100 100 1000 850]);
 
-
-%% 3. Plotting Avanzato
-figure('Name', 'Adaptive Structure RPCA', 'Color', 'w', 'Position', [100 100 1000 800]);
-
-% Plot T2
+% --- Plot T2 ---
 subplot(3,1,1);
-semilogy(T2_store, 'b'); hold on;
-semilogy(T2_lim_store, 'r--');
-xline(800, 'k-');
-title('T^2 Statistic (Variable Threshold)');
-xlim([200 n_obs]); grid on;
+semilogy(T2_store, 'b', 'LineWidth', 1); hold on;
+semilogy(T2_lim_store, 'r--', 'LineWidth', 1.2);
+yl = ylim;
+patch([400 410 410 400], [yl(1) yl(1) yl(2) yl(2)], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([480 490 490 480], [yl(1) yl(1) yl(2) yl(2)], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([500 550 550 500], [yl(1) yl(1) yl(2) yl(2)], 'y', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([800 840 840 800], [yl(1) yl(1) yl(2) yl(2)], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+title('Hotelling''s T^2 Statistic (Adaptive)');
+ylabel('T^2 (log scale)'); xlim([200 n_obs]); grid on;
+legend('T^2 Stat', 'Control Limit', 'Location', 'northeast');
 
-% Plot Q
+% --- Plot Q (SPE) ---
 subplot(3,1,2);
-semilogy(Q_store, 'b'); hold on;
-semilogy(Q_lim_store, 'r--');
-xline(800, 'k-');
-title('Q Statistic (SPE)');
-xlim([200 n_obs]); grid on;
+semilogy(Q_store, 'b', 'LineWidth', 1); hold on;
+semilogy(Q_lim_store, 'r--', 'LineWidth', 1.2);
+yl = ylim;
+patch([400 410 410 400], [yl(1) yl(1) yl(2) yl(2)], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([480 490 490 480], [yl(1) yl(1) yl(2) yl(2)], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([500 550 550 500], [yl(1) yl(1) yl(2) yl(2)], 'y', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([800 840 840 800], [yl(1) yl(1) yl(2) yl(2)], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+title('Q Statistic (Squared Prediction Error)');
+ylabel('Q (log scale)'); xlim([200 n_obs]); grid on;
+legend('Q Stat', 'Control Limit', 'Location', 'northeast');
 
-% Plot Numero di PC
+% --- Plot Numero di PC (VRE vs Ground Truth) ---
 subplot(3,1,3);
-plot(npcs_store, 'k', 'LineWidth', 2);
+plot(npcs_store, 'k', 'LineWidth', 2); hold on;
+yline(3, 'b:', 'Ground Truth (3)', 'LineWidth', 1.5);
+yl = ylim;
+patch([400 410 410 400], [0 0 m_vars m_vars], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([480 490 490 480], [0 0 m_vars m_vars], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([500 550 550 500], [0 0 m_vars m_vars], 'y', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([800 840 840 800], [0 0 m_vars m_vars], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
 ylim([0 m_vars]); 
-yline(3, 'b:', 'Ground Truth (3)');
-xline(800, 'r-', 'Fault Start');
-title(['Number of Principal Components (CPV Threshold']);
-ylabel('n PCs'); xlabel('Samples');
+title('Structural Adaptation: Optimal PCs selected by VRE');
+ylabel('Number of PCs (l)'); xlabel('Samples (k)');
 xlim([200 n_obs]); grid on;
+legend('VRE Selection', 'Physical Subspace', 'Location', 'northeast');

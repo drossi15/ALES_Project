@@ -60,25 +60,30 @@ for k = 1:n_samples
     x_k = x_k + noise;
     
     % --- E. Inserimento Guasto (Fault Injection) ---
-    % Aggiungiamo un guasto improvviso dal campione 800 in poi.
-    % Simuliamo un "bias" (scalino) sul sensore 1.
-    if k >= 400 && k<=410
-        x_k(5) = x_k(5) + 5; % Guasto di ampiezza 3 sigma circa
-        GroundTruth_Fault(k) = 1;
-    end
-
-    if k >= 480 && k<=490
-        x_k(5) = x_k(5) + 5; % Guasto di ampiezza 3 sigma circa
+    
+    % CASO 1: Intermittent Faults (Spikes)
+    % Simulazione di disturbi impulsivi su Sensore 5 (es. interferenze elettriche)
+    if k >= 400 && k<=410 || (k >= 480 && k <= 490)
+        x_k(5) = x_k(5) + 5; % Magnitude elevata ma breve durata
         GroundTruth_Fault(k) = 1;
     end
     
-    if k >= 500 && k<=550
-        x_k(2) = x_k(2) + 0.01*(k-300); % Guasto di ampiezza 3 sigma circa
+    % CASO 2: Incipient Fault (Drift temporaneo / "Dome Shape")
+    % Simulazione di un'anomalia che cresce e poi rientra (es. surriscaldamento temporaneo)
+    if k >= 500 && k <= 550
+        % Crea una curva che va da 0 a 3.0 e torna a 0 tra k=500 e k=550
+        duration = 550 - 500;
+        t_local = k - 500;
+        fault_magnitude = 6.0 * sin(pi * t_local / duration); 
+        
+        x_k(4) = x_k(4) + fault_magnitude; 
         GroundTruth_Fault(k) = 1;
     end
 
+    % CASO 3: Permanent Fault (Step Change)
+    % Simulazione di rottura o bias permanente sul Sensore 1
     if k >= 800 && k<=840
-        x_k(1) = x_k(1) + 4.0; % Guasto di ampiezza 3 sigma circa
+        x_k(1) = x_k(1) + 4.0;
         GroundTruth_Fault(k) = 1;
     end
     
@@ -107,7 +112,7 @@ X_scaled = (X_raw - mean_vec) ./ std_vec;
 figure('Name', 'Simulated Data Time-Varying', 'Color', 'w');
 subplot(2,1,1);
 plot(X_scaled);
-xline(800, 'r--', 'Fault Start', 'LabelVerticalAlignment', 'bottom');
+%xline(800, 'r--', 'Fault Start', 'LabelVerticalAlignment', 'bottom');
 title('Simulated Process Data (Normalized)');
 ylabel('Normalized Amplitude');
 xlabel('Samples (k)');
