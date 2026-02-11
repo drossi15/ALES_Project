@@ -130,7 +130,7 @@ for k = (n_init + 1) : n_obs
         
         if mod(k,10) == 0
 
-            [P_all, Lambda_all] = eigs(R,l_max,'largestabs');
+            [P_all, Lambda_all] = eigs(R,l_max,'largestabs','IsSymmetric',true);
             [lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');
             P_all = P_all(:, idx);
         
