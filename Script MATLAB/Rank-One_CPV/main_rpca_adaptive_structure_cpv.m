@@ -1,4 +1,4 @@
-%% MAIN_RPCA_ADAPTIVE_STRUCTURE.m
+%% MAIN_RPCA_ADAPTIVE_STRUCTURE_CPV.m
 % Implementazione RPCA con Selezione Automatica del numero di PC (CPV)
 % Prima occorre eseguire generate_data.m
 
@@ -14,20 +14,20 @@ cpv_threshold = 0.90;   % SOGLIA CPV: Vogliamo spiegare almeno il 90% della vari
                         % il 90% dovrebbe selezionare n_pcs = 3.
 
 % -- Inizializzazione (Training Phase) --
-n_init = 200;
+n_init = 200;                       %% numero iniziale di campioni
 X_init = X_raw(1:n_init, :);
 [n_obs, m_vars] = size(X_raw);
 
 % Statistiche iniziali
-b = mean(X_init)';      
-sigma_vec = std(X_init)';
-Sigma = diag(sigma_vec);
-R = corr(X_init);
+b = mean(X_init)';              % Eq(3)   media delle 6 variabili
+sigma_vec = std(X_init)';       % std delle 6 variabili
+Sigma = diag(sigma_vec);        % Eq(5)
+R = corr(X_init);               % Eq(6)    matrice di correlazione
 
-% Eigen-decomposition iniziale
-[P_all, Lambda_all] = eig(R);
-[lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');
-P_all = P_all(:, idx);
+% Eigen-decomposition iniziale Eq(1) e Eq(2)
+[P_all, Lambda_all] = eig(R);       %P_all matrice le cui colonne autovettori di R, lambda matrice diagonale degli autovalori
+[lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');      %Estraggo gli autovalori e li riordino dal più grande al più piccolo
+P_all = P_all(:, idx);          %Riordino le colonne di P_all usando idx ( j-esima colonna di P_all corrisponde a lambda_sorted(j))
 
 
 
@@ -59,29 +59,29 @@ for k = (n_init + 1) : n_obs
     % --- PASSO B: Detection (Usa il modello al passo k-1) ---
     x_new_scaled = (x_new_raw - b) ./ sigma_vec;
     
-    % T2 Statistic
+    % T2 Statistic Eq(43)
     scores = P' * x_new_scaled;
     Lambda_inv = diag(1./lambda_sorted(1:n_pcs));
     T2_stat = scores' * Lambda_inv * scores;
     
-    % Q Statistic (SPE)
+    % Q Statistic (SPE) Eq(39)
     x_hat = P * scores;
     residual = x_new_scaled - x_hat;
     Q_stat = residual' * residual;
     
-    % Soglie Adattive
+    % Soglie Adattive   section 7.1
     T2_lim = chi2inv(alpha, n_pcs);
     
     % Soglia Q (Jackson-Mudholkar)
-    theta1 = sum(lambda_sorted(n_pcs+1:end));
-    theta2 = sum(lambda_sorted(n_pcs+1:end).^2);
-    theta3 = sum(lambda_sorted(n_pcs+1:end).^3);
-    h0 = 1 - (2*theta1*theta3)/(3*theta2^2);
+    theta1 = sum(lambda_sorted(n_pcs+1:end));       % Eq(35)
+    theta2 = sum(lambda_sorted(n_pcs+1:end).^2);    % Eq(36)
+    theta3 = sum(lambda_sorted(n_pcs+1:end).^3);    % Eq(42)
+    h0 = 1 - (2*theta1*theta3)/(3*theta2^2);        % Eq(41)
     if h0 < 0, h0 = 0.001; end
     c_alpha = norminv(alpha);
     term1 = sqrt(2 * theta2 * h0^2) / theta1;
     term2 = 1 + (theta2 * h0 * (h0 - 1)) / (theta1^2);
-    Q_lim = theta1 * (1 + term1 * c_alpha + term2)^(1/h0);
+    Q_lim = theta1 * (1 + term1 * c_alpha + term2)^(1/h0);  % Eq(40)
     
     % Salvataggio
     T2_store(k) = T2_stat;
@@ -90,25 +90,24 @@ for k = (n_init + 1) : n_obs
     Q_lim_store(k)  = Q_lim;
     npcs_store(k) = n_pcs; % Salviamo il numero di PC usati
     
-    % --- PASSO C: Logica di Aggiornamento ---
+    % --- PASSO C: Logica di Aggiornamento step 3 section 7.2
     is_fault = (T2_stat > T2_lim) || (Q_stat > Q_lim);
     
     if ~is_fault
         % 1. Aggiornamento Media e Varianza (Necessari per scalare i dati)
         b_old = b;
-        b = mu * b_old + (1 - mu) * x_new_raw;
+        b = mu * b_old + (1 - mu) * x_new_raw;     %Eq(15)
         delta_b = b - b_old;
         
         sigma_sq_old = sigma_vec.^2;
         term_var = (x_new_raw - b).^2;
-        sigma_sq_new = mu * (sigma_sq_old + delta_b.^2) + (1 - mu) * term_var;
+        sigma_sq_new = mu * (sigma_sq_old + delta_b.^2) + (1 - mu) * term_var;  %Eq(16)
         sigma_vec = sqrt(sigma_sq_new);
         
         % 2. Scalaggio del dato corrente (Il "z" del paper di Li)
         x_norm_update = (x_new_raw - b) ./ sigma_vec; 
         
         % 3. AGGIORNAMENTO RICORSIVO (Rank-One Modification)
-        % Nota: Non aggiorniamo più R = Part1 + Part2, facciamo tutto qui!
         [P_all, Lambda_all] = rank_one_update(P_all, Lambda_all, x_norm_update, mu);
         
         % 4. Ordinamento e Selezione PC (CPV)

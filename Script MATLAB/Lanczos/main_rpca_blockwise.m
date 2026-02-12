@@ -1,4 +1,4 @@
-%% MAIN_RPCA_ADAPTIVE_STRUCTURE.m
+%% MAIN_RPCA_BLOCKWISE.m
 % Implementazione RPCA con Selezione Automatica del numero di PC (CPV)
 % Prima occorre eseguire generate_data.m
 

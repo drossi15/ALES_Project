@@ -108,7 +108,6 @@ X_scaled = (X_raw - mean_vec) ./ std_vec;
 figure('Name', 'Simulated Data Time-Varying', 'Color', 'w');
 subplot(2,1,1);
 plot(X_scaled);
-%xline(800, 'r--', 'Fault Start', 'LabelVerticalAlignment', 'bottom');
 title('Simulated Process Data (Normalized)');
 ylabel('Normalized Amplitude');
 xlabel('Samples (k)');

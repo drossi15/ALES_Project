@@ -1,4 +1,4 @@
-%% MAIN_RPCA_ADAPTIVE_STRUCTURE.m
+%% MAIN_RPCA_BLOCKDATA.m
 % Implementazione RPCA con Selezione Automatica del numero di PC (CPV)
 % Prima occorre eseguire generate_data.m
 
@@ -8,7 +8,7 @@ end
 
 
 %% 1. Parametri dell'Algoritmo
-mu = 0.95;              % Forgetting Factor (consiglio 0.95 per reattività)
+mu = 0.95;              % Forgetting Factor
 alpha = 0.99;           % Confidenza per le soglie (99%)
 cpv_threshold = 0.90;   % SOGLIA CPV: Vogliamo spiegare almeno il 90% della varianza
                         % Nota: Poiché il sistema ha 3 variabili latenti forti su 6, 

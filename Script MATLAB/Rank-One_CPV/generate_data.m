@@ -93,8 +93,6 @@ end
 
 %% 3. Pre-processing Iniziale (Scaling)
 % Le linee guida dicono: "The data is scaled to zero mean and unit variance".
-% Nota: In un sistema realtime puro lo faresti ricorsivamente, ma per il 
-% dataset iniziale (training set) lo facciamo standard.
 
 % Usiamo i primi 200 campioni come "Training Set" iniziale per scalare
 n_train = 200;
@@ -105,14 +103,12 @@ mean_vec = mean(X_train);
 std_vec = std(X_train);
 
 % Normalizziamo TUTTO il dataset usando le statistiche iniziali
-% (Questo è realistico: all'inizio usi le statistiche note. Poi l'RPCA dovrà adattarsi)
 X_scaled = (X_raw - mean_vec) ./ std_vec;
 
 %% 4. Visualizzazione
 figure('Name', 'Simulated Data Time-Varying', 'Color', 'w');
 subplot(2,1,1);
 plot(X_scaled);
-%xline(800, 'r--', 'Fault Start', 'LabelVerticalAlignment', 'bottom');
 title('Simulated Process Data (Normalized)');
 ylabel('Normalized Amplitude');
 xlabel('Samples (k)');

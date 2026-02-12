@@ -25,7 +25,7 @@ function [P_new, Lambda_new] = rank_one_update(P_old, Lambda_old, z, mu)
     % 5. Ruotiamo i vecchi autovettori per ottenere quelli nuovi
     P_new = P_old * P_rot;
     
-    % Nota: MATLAB non garantisce l'ordine decrescente, quindi 
-    % l'ordinamento lo gestiremo nel Main per sicurezza.
+    % MATLAB non garantisce l'ordine decrescente, quindi 
+    % l'ordinamento lo gestiamo nel Main per sicurezza.
 
 end
