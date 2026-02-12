@@ -15,7 +15,7 @@ cpv_threshold = 0.90;   % SOGLIA CPV: Vogliamo spiegare almeno il 90% della vari
                         % il 90% dovrebbe selezionare n_pcs 
 
 
-% -- Inizializzazione (Training Phase) --
+% Inizializzazione (Training Phase)
 n_init = 200;
 X_init = X_raw(1:n_init, :);
 [n_obs, m_vars] = size(X_raw);
@@ -35,7 +35,7 @@ P_all = P_all(:, idx);
 
 
 
-% --- SELEZIONE INIZIALE n_pcs (CPV) ---
+% SELEZIONE INIZIALE n_pcs (CPV)
 total_variance = sum(lambda_sorted);
 cum_variance = cumsum(lambda_sorted) / total_variance;
 n_pcs = find(cum_variance >= cpv_threshold, 1, 'first');
@@ -45,7 +45,6 @@ l_max = 5;
 
 fprintf('Inizializzazione: Selezionate %d componenti principali (Spiegano %.2f%% var)\n', ...
     n_pcs, cum_variance(n_pcs)*100);
-fprintf('Selezione offline con cpv il numero di l_max \n');
 
 P = P_all(:, 1:n_pcs);
 
@@ -66,10 +65,10 @@ fprintf('Avvio monitoraggio ricorsivo con struttura adattiva...\n');
 
 for k = (n_init + 1) : n_obs
     
-    % --- PASSO A: Acquisizione ---
+    % PASSO A: Acquisizione
     x_new_raw = X_raw(k, :)';
 
-    % --- PASSO B: Detection (Usa il modello al passo k-1) ---
+    % PASSO B: Detection (Usa il modello al passo k-1)
     x_new_scaled = (x_new_raw - b) ./ sigma_vec;
 
     % T2 Statistic
@@ -103,7 +102,7 @@ for k = (n_init + 1) : n_obs
     Q_lim_store(k)  = Q_lim;
     npcs_store(k) = n_pcs; % Salviamo il numero di PC usati
     
-    % --- PASSO C: Logica di Aggiornamento ---
+    % PASSO C: Logica di Aggiornamento
     is_fault = (T2_stat > T2_lim) || (Q_stat > Q_lim);
     
     if ~is_fault

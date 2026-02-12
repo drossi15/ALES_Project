@@ -39,27 +39,27 @@ fprintf('Generazione dati in corso...\n');
 
 for k = 1:n_samples
     
-    % --- A. Variabili Latenti (t) ---
+    %A. Variabili Latenti (t)
     % Generiamo t1, t2, t3 con le deviazioni standard specificate
     t = randn(n_latents, 1) .* std_t;
     
-    % --- B. Rendere il sistema Time-Varying (Richiesta Progetto) ---
+    % B. Rendere il sistema Time-Varying (Richiesta Progetto)
     % 1. Modifica della struttura di correlazione (Matrice A cambia piano piano)
     A_current = A_nominal;
     A_current(1,1) = A_nominal(1,1) + (k * drift_slope_A); 
     
-    % --- C. Calcolo delle uscite x (senza rumore) ---
+    % C. Calcolo delle uscite x (senza rumore)
     x_k = A_current * t;
     
     % 2. Aggiunta deriva sulla media (Sensor Drift su x2)
     % Questo simula lo sporcamento del sensore citato nel paper
     x_k(2) = x_k(2) + (k * sensor_drift_slope);
     
-    % --- D. Aggiunta Rumore ---
+    % D. Aggiunta Rumore
     noise = randn(n_vars, 1) * std_noise;
     x_k = x_k + noise;
     
-    % --- E. Inserimento Guasto (Fault Injection) ---
+    % E. Inserimento Guasto (Fault Injection)
     
     % CASO 1: Intermittent Faults (Spikes)
     % Simulazione di disturbi impulsivi su Sensore 5 (es. interferenze elettriche)
@@ -92,9 +92,6 @@ for k = 1:n_samples
 end
 
 %% 3. Pre-processing Iniziale (Scaling)
-% Le linee guida dicono: "The data is scaled to zero mean and unit variance".
-% Nota: In un sistema realtime puro lo faresti ricorsivamente, ma per il 
-% dataset iniziale (training set) lo facciamo standard.
 
 % Usiamo i primi 200 campioni come "Training Set" iniziale per scalare
 n_train = 200;
@@ -105,7 +102,6 @@ mean_vec = mean(X_train);
 std_vec = std(X_train);
 
 % Normalizziamo TUTTO il dataset usando le statistiche iniziali
-% (Questo è realistico: all'inizio usi le statistiche note. Poi l'RPCA dovrà adattarsi)
 X_scaled = (X_raw - mean_vec) ./ std_vec;
 
 %% 4. Visualizzazione
