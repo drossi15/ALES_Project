@@ -6,7 +6,6 @@ This repository presents three different strategies for Recursive Principal Comp
 Li et al., Recursive PCA for Adaptive Process Monitoring
 https://www.sciencedirect.com/science/article/pii/S0959152400000226
 
-Implemented Approaches
 
 The project includes the following RPCA update strategies:
 
