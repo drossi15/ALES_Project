@@ -52,7 +52,7 @@ P = P_all(:, 1:n_pcs);
 
 %% Loop Ricorsivo
 
-B = 5;
+B = 3;
 buffer = [];
 
 T2_store = zeros(n_obs, 1);
@@ -136,7 +136,8 @@ for k = (n_init + 1) : n_obs
             %disp(Part2)
     
             R = Part1 + Part2;
-            R = (R + R') / 2; % Simmetria 
+            R = (R + R') / 2; % Simmetria
+            R = diag(1./sqrt(diag(R))) * R * diag(1./sqrt(diag(R))); %standardizzo per aver diagonale uguale a 1
 
             [P_all, Lambda_all] = eigs(R,l_max,'largestabs','IsSymmetric',true);
             [lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');
