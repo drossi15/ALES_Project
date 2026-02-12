@@ -56,7 +56,7 @@ end
 
 
 %% 1. Parametri dell'Algoritmo
-mu = 0.95;              % Forgetting Factor (consiglio 0.95 per reattività)
+mu = 0.95;              % Forgetting Factor
 alpha = 0.99;           % Confidenza per le soglie (99%)
 
 % Inizializzazione
