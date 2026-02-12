@@ -123,9 +123,20 @@ for k = (n_init + 1) : n_obs
             sigma_vec = sqrt(sigma_sq_new);
             
             % Aggiornamento R (Eq. 19)
-            Y_block = (buffer - b') ./ sigma_vec';
-            R = mu*R + (1-mu)*(Y_block' * Y_block)/B;
-            R = (R + R')/2;
+            
+            Sigma_new = diag(sigma_vec);
+            Sigma_old = diag(sqrt(sigma_sq_old));
+            inv_Sigma_new = diag(1 ./ sigma_vec);
+            
+            Term_Center = Sigma_old * R * Sigma_old + (delta_b * delta_b');
+            Part1 = mu * (inv_Sigma_new * Term_Center * inv_Sigma_new);
+            
+            x_norm_update = (buffer - b') ./ sigma_vec'; 
+            Part2 = (1 - mu) * (x_norm_update' * x_norm_update)/B;
+            %disp(Part2)
+    
+            R = Part1 + Part2;
+            R = (R + R') / 2; % Simmetria 
 
             [P_all, Lambda_all] = eigs(R,l_max,'largestabs','IsSymmetric',true);
             [lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');
