@@ -176,10 +176,7 @@ for k = (n_init + 1) : n_obs
         P = P_all(:, 1:n_pcs);
         
     else
-        % Fault Detected: Stop Update
-        % n_pcs rimane quello dell'ultimo passo sano
-        % Fault Detected: Log the fault occurrence
-        fprintf('Fault detected at observation %d\n', k);
+        % Fault Detected: Modello congelato
     end
 end
 
