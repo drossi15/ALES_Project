@@ -71,7 +71,7 @@ for k = 1:n_samples
     % CASO 2: Incipient Fault
     % Simulazione di un'anomalia che cresce e poi rientra (es. surriscaldamento temporaneo)
     if k >= 500 && k <= 550
-        % Crea una curva che va da 0 a 3.0 e torna a 0 tra k=500 e k=550
+        % Crea una curva che va da 0 a 6.0 e torna a 0 tra k=500 e k=550
         duration = 550 - 500;
         t_local = k - 500;
         fault_magnitude = 6.0 * sin(pi * t_local / duration); 
