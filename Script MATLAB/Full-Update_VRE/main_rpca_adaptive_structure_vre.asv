@@ -79,8 +79,10 @@ R = corr(X_init);             % Eq(6)    matrice di correlazione
 % Scomposizione Autovalori e Autovettori  Eq(1)
 
 [P_all, Lambda_all] = eig(R);    %P_all matrice le cui colonne autovettori di R, lambda matrice diagonale degli autovalori   
+
 [lambda_sorted, idx] = sort(diag(Lambda_all), 'descend');    %Estraggo gli autovalori e li riordino dal più grande al più piccolo
 P_all = P_all(:, idx);   %Riordino le colonne di P_all usando idx ( j-esima colonna di P_all corrisponde a lambda_sorted(j))
+
 
 
 n_pcs= select_npcs_vre(R, P_all); %Seleziono il numero di componenti con VRE
@@ -137,7 +139,7 @@ for k = (n_init + 1) : n_obs
     Q_lim_store(k)  = Q_lim;
     npcs_store(k) = n_pcs;  %Salvo il numero di pc usato
     
-    % Logica di Aggiornamento step 3 section 7.2
+    % Logica di Aggiornamento %step 3 section 7.2
     is_fault = (T2_stat > T2_lim) || (Q_stat > Q_lim);  
     
     if ~is_fault

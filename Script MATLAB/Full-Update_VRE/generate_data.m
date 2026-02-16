@@ -44,7 +44,7 @@ for k = 1:n_samples
     t = randn(n_latents, 1) .* std_t;
     
     %B. Rendere il sistema Time-Varying (Richiesta Progetto)
-    % 1. Modifica della struttura di correlazione (Matrice A cambia piano piano)
+    % 1. Modifica della struttura di A (Matrice A cambia piano piano)
     A_current = A_nominal;
     A_current(1,1) = A_nominal(1,1) + (k * drift_slope_A); 
     
@@ -68,7 +68,7 @@ for k = 1:n_samples
         GroundTruth_Fault(k) = 1;
     end
     
-    % CASO 2: Incipient Fault (Drift temporaneo / "Dome Shape")
+    % CASO 2: Incipient Fault
     % Simulazione di un'anomalia che cresce e poi rientra (es. surriscaldamento temporaneo)
     if k >= 500 && k <= 550
         % Crea una curva che va da 0 a 3.0 e torna a 0 tra k=500 e k=550
@@ -86,7 +86,7 @@ for k = 1:n_samples
         x_k(1) = x_k(1) + 4.0;
         GroundTruth_Fault(k) = 1;
     end
-    
+
     % Salvataggio
     X_raw(k, :) = x_k';
 end
@@ -117,7 +117,7 @@ subplot(2,1,2);
 % Zoom sul sensore 2 per vedere il drift
 plot(X_scaled(:,2), 'b'); hold on;
 yline(0, 'k--');
-title('Zoom Sensor 2 (Note the slow upward Drift)');
+title('Zoom Sensor 2 Drift');
 xlabel('Samples (k)');
 grid on;
 

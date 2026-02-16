@@ -65,18 +65,18 @@ fprintf('Avvio monitoraggio ricorsivo con struttura adattiva...\n');
 
 for k = (n_init + 1) : n_obs
     
-    % PASSO A: Acquisizione
+    %  Acquisizione
     x_new_raw = X_raw(k, :)';
 
-    % PASSO B: Detection (Usa il modello al passo k-1)
+    % Eseguo lo Scaling del dato
     x_new_scaled = (x_new_raw - b) ./ sigma_vec;
 
-    % T2 Statistic
+    % T2 Statistic   Eq(43)
     scores = P' * x_new_scaled;
     Lambda_inv = diag(1./lambda_sorted(1:n_pcs));
     T2_stat = scores' * Lambda_inv * scores;
     
-    % Q Statistic (SPE)
+    % Q Statistic (SPE) Eq(39)
     x_hat = P * scores;
     residual = x_new_scaled - x_hat;
     Q_stat = residual' * residual;
@@ -85,15 +85,15 @@ for k = (n_init + 1) : n_obs
     T2_lim = chi2inv(alpha, n_pcs);
     
     % Soglia Q (Jackson-Mudholkar)
-    theta1 = sum(lambda_sorted(n_pcs+1:end));
-    theta2 = sum(lambda_sorted(n_pcs+1:end).^2);
-    theta3 = sum(lambda_sorted(n_pcs+1:end).^3);
-    h0 = 1 - (2*theta1*theta3)/(3*theta2^2);
+    theta1 = sum(lambda_sorted(n_pcs+1:end));   % Eq(35)
+    theta2 = sum(lambda_sorted(n_pcs+1:end).^2);  % Eq(36)
+    theta3 = sum(lambda_sorted(n_pcs+1:end).^3);  % Eq(42)
+    h0 = 1 - (2*theta1*theta3)/(3*theta2^2);     % Eq(41)
     if h0 < 0, h0 = 0.001; end
     c_alpha = norminv(alpha);
     term1 = sqrt(2 * theta2 * h0^2) / theta1;
     term2 = 1 + (theta2 * h0 * (h0 - 1)) / (theta1^2);
-    Q_lim = theta1 * (1 + term1 * c_alpha + term2)^(1/h0);
+    Q_lim = theta1 * (1 + term1 * c_alpha + term2)^(1/h0);    % Eq(40)
     
     % Salvataggio
     T2_store(k) = T2_stat;
@@ -102,28 +102,27 @@ for k = (n_init + 1) : n_obs
     Q_lim_store(k)  = Q_lim;
     npcs_store(k) = n_pcs; % Salviamo il numero di PC usati
     
-    % PASSO C: Logica di Aggiornamento
+    % Logica di Aggiornamento step 3 section 7.2
     is_fault = (T2_stat > T2_lim) || (Q_stat > Q_lim);
     
     if ~is_fault
 
 
-        buffer = [buffer; x_new_raw'];
+        buffer = [buffer; x_new_raw'];  %aggiungo il nuovo dato al buffer
          
         
         if size(buffer,1) == B
             % 1. Aggiornamento Media e Varianza (Necessari per scalare i dati)
             b_old = b;
-            b = mu * b_old + (1 - mu) * mean(buffer,1)';
+            b = mu * b_old + (1 - mu) * mean(buffer,1)';  %Eq(15)
             delta_b = b - b_old;
             
             sigma_sq_old = sigma_vec.^2;
             term_var = var(buffer,1,1)';
-            sigma_sq_new = mu * (sigma_sq_old + delta_b.^2) + (1 - mu) * term_var;
+            sigma_sq_new = mu * (sigma_sq_old + delta_b.^2) + (1 - mu) * term_var;  %Eq(16)
             sigma_vec = sqrt(sigma_sq_new);
             
             % Aggiornamento R (Eq. 19)
-            
             Sigma_new = diag(sigma_vec);
             Sigma_old = diag(sqrt(sigma_sq_old));
             inv_Sigma_new = diag(1 ./ sigma_vec);
@@ -149,7 +148,7 @@ for k = (n_init + 1) : n_obs
             cum_var_percentage = cumsum(lambda_sorted) / total_var;
            
             n_pcs_new = find(cum_var_percentage >= cpv_threshold, 1, 'first');
-            n_pcs_new = min(n_pcs_new, l_max); % Non usare mai più di 4 PC su 6 sensori
+            n_pcs_new = min(n_pcs_new, l_max); 
             if isempty(n_pcs_new), n_pcs_new = l_max; end
             n_pcs = n_pcs_new;
             P = P_all(:, 1:n_pcs);

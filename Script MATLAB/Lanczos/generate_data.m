@@ -68,7 +68,7 @@ for k = 1:n_samples
         GroundTruth_Fault(k) = 1;
     end
     
-    % CASO 2: Incipient Fault (Drift temporaneo / "Dome Shape")
+    % CASO 2: Incipient Fault
     % Simulazione di un'anomalia che cresce e poi rientra (es. surriscaldamento temporaneo)
     if k >= 500 && k <= 550
         % Crea una curva che va da 0 a 3.0 e torna a 0 tra k=500 e k=550
